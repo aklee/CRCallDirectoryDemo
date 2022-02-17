@@ -62,9 +62,10 @@
 
 - (BOOL)reload:(void (^)(NSError *error))completion {
     if (self.dataList.count == 0) {
+        NSLog(@"datalist 为空, 先添加");
         return NO;
     }
-    
+    NSLog(@"datalist=%@", self.dataList);
     if (![self writeDataToAppGroupFile]) {
         return NO;
     }
@@ -72,6 +73,7 @@
     CXCallDirectoryManager *manager = [CXCallDirectoryManager sharedInstance];
     [manager reloadExtensionWithIdentifier:self.externsionIdentifier completionHandler:^(NSError * _Nullable error) {
         completion(error);
+        NSLog(@"reloadExtensionWithIdentifier %@", error);
     }];
     
     return YES;

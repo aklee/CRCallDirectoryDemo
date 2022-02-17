@@ -21,9 +21,11 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.phoneText.text = @"15258060534";
+    self.indtifierText.text = @"kk123";
 #warning extension Bundle ID和App Group ID需要根据实际项目调整
-    self.manager = [[CRCallDirectoryManager alloc] initWithExtensionIdentifier:@"com.crmo.CRCallDirectoryDemo.CallDirectory"
-                                            ApplicationGroupIdentifier:@"group.com.crmo.CallKitDemo"];
+    self.manager = [[CRCallDirectoryManager alloc] initWithExtensionIdentifier:@"com.getui.www.demo.CallDirectoryExtension"
+                                            ApplicationGroupIdentifier:@"group.ent.com.getui.demo"];
 }
 
 - (IBAction)add:(id)sender {
@@ -68,7 +70,7 @@
 
 // 测试超大数据量效率
 - (IBAction)autoAdd:(id)sender {
-    for (int i = 0; i < 1500000; i++) {
+    for (int i = 0; i < 9; i++) {
         NSString *name = @"测试时";
         NSString *phone = [NSString stringWithFormat:@"%ld", (18000000000 + i)];
         [self.manager addPhoneNumber:phone label:name];
