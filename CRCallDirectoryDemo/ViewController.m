@@ -22,25 +22,47 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.phoneText.text = @"15258060534";
+//    self.phoneText.text = @"18658849753";
     self.indtifierText.text = @"kk123";
 #warning extension Bundle ID和App Group ID需要根据实际项目调整
     self.manager = [[CRCallDirectoryManager alloc] initWithExtensionIdentifier:@"com.getui.www.demo.CallDirectoryExtension"
                                             ApplicationGroupIdentifier:@"group.ent.com.getui.demo"];
 }
 
-- (IBAction)add:(id)sender {
+- (IBAction)recognize:(id)sender {
     BOOL result = [self.manager addPhoneNumber:self.phoneText.text label:self.indtifierText.text];
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"添加结果"
-                                                                   message:[NSString stringWithFormat:@"%d", result]
-                                                            preferredStyle:UIAlertControllerStyleAlert];
-    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"OK"
-                                                           style:UIAlertActionStyleCancel
-                                                         handler:nil];
-    [alert addAction:cancelAction];
-    [self presentViewController:alert animated:YES completion:nil];
+    if (result) {
+        [self reload];
+    }
 }
 
-- (IBAction)reload:(id)sender {
+- (IBAction)block:(id)sender {
+    BOOL result = [self.manager blockPhoneNumber:self.phoneText.text label:self.indtifierText.text];
+    if (result) {
+    [self reload];
+    }
+}
+
+// 测试超大数据量效率
+- (IBAction)autoRec:(id)sender {
+    for (int i = 0; i < 9; i++) {
+        NSString *name = @"测试时";
+        NSString *phone = [NSString stringWithFormat:@"%ld", (18000000000 + i)];
+        [self.manager addPhoneNumber:phone label:name];
+        name = nil;
+        phone = nil;
+    }
+    __weak typeof(self) weakself = self;
+    [self.manager reload:^(NSError *error) {
+        if (error) {
+            [weakself alertMessage:@"写入系统错误"];
+        } else {
+            [weakself alertMessage:@"写入系统成功"];
+        }
+    }];
+}
+
+- (void)reload {
     __weak typeof(self) weakself = self;
     // 先检查设置是否打开
     [self.manager getEnableStatus:^(CXCallDirectoryEnabledStatus enabledStatus, NSError *error) {
@@ -64,25 +86,6 @@
                     [weakself alertMessage:@"写入系统成功"];
                 }
             }];
-        }
-    }];
-}
-
-// 测试超大数据量效率
-- (IBAction)autoAdd:(id)sender {
-    for (int i = 0; i < 9; i++) {
-        NSString *name = @"测试时";
-        NSString *phone = [NSString stringWithFormat:@"%ld", (18000000000 + i)];
-        [self.manager addPhoneNumber:phone label:name];
-        name = nil;
-        phone = nil;
-    }
-    __weak typeof(self) weakself = self;
-    [self.manager reload:^(NSError *error) {
-        if (error) {
-            [weakself alertMessage:@"写入系统错误"];
-        } else {
-            [weakself alertMessage:@"写入系统成功"];
         }
     }];
 }

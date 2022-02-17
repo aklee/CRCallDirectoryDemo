@@ -58,13 +58,24 @@
                                                                   error:&err];
             
             if(!err && dic && [dic isKindOfClass:[NSDictionary class]]) {
-                NSString *number = dic.allKeys[0];
-                NSString *name = dic[number];
+                NSString *number = dic[@"pn"];
+                NSString *name = dic[@"name"];
                 if (number && [number isKindOfClass:[NSString class]] &&
                     name && [name isKindOfClass:[NSString class]]) {
                     CXCallDirectoryPhoneNumber phoneNumber = [number longLongValue];
-                    [context addIdentificationEntryWithNextSequentialPhoneNumber:phoneNumber label:name];
+                    if (dic[@"b"]) {
+                        //黑名单拦截， 对方拨号进来后就是通话中
+                        NSLog(@"akak rec %@", @(phoneNumber));
+                        [context addBlockingEntryWithNextSequentialPhoneNumber:phoneNumber];
+                    } else {
+                        //识别
+                        NSLog(@"akak block %@ %@ %@ %@", @(phoneNumber), name, dic, dic.allKeys);
+                        [context addIdentificationEntryWithNextSequentialPhoneNumber:phoneNumber label:name];
+                    }
+                    
                 }
+                
+                
             }
             
             dic = nil;

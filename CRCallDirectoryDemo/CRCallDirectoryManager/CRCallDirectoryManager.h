@@ -46,7 +46,7 @@ API_AVAILABLE(ios(10.0))
  @return 是否成功
  */
 - (BOOL)addPhoneNumber:(NSString *)phoneNumber label:(NSString *)label;
-
+- (BOOL)blockPhoneNumber:(NSString *)phoneNumber label:(NSString *)label;
 /**
  清除之前添加的数据
  调用reload之后会自动调用

@@ -15,6 +15,8 @@
 @property (nonatomic, strong) NSString *groupIdentifier;
 /** 存储待写入电话号码与标识，key：号码，value：标识 **/
 @property (nonatomic, strong) NSMutableDictionary *dataList;
+
+@property (nonatomic, strong) NSMutableDictionary *blockList;
 /** 带国家码的手机号 **/
 @property (nonatomic, strong) NSPredicate *phoneNumberWithNationCodePredicate;
 /** 不带国家码的手机号 **/
@@ -44,15 +46,18 @@
 - (BOOL)addPhoneNumber:(NSString *)phoneNumber label:(NSString *)label {
     if (!phoneNumber || ![phoneNumber isKindOfClass:[NSString class]] ||
         !label || ![label isKindOfClass:[NSString class]] || label.length == 0) {
+        NSLog(@"pn no valid");
         return NO;
     }
     
     NSString *handledPhoneNumber = [self handlePhoneNumber:phoneNumber];
     if (!handledPhoneNumber) {
+        NSLog(@"pn no valid");
         return NO;
     }
     
     if (self.dataList[handledPhoneNumber]) { // 已经设置过这个phoneNumber
+        NSLog(@"pn already exits");
         return NO;
     }
     
@@ -60,17 +65,41 @@
     return YES;
 }
 
+- (BOOL)blockPhoneNumber:(NSString *)phoneNumber label:(NSString *)label {
+    if (!phoneNumber || ![phoneNumber isKindOfClass:[NSString class]] ||
+        !label || ![label isKindOfClass:[NSString class]] || label.length == 0) {
+        NSLog(@"pn no valid");
+        return NO;
+    }
+    
+    NSString *handledPhoneNumber = [self handlePhoneNumber:phoneNumber];
+    if (!handledPhoneNumber) {
+        NSLog(@"pn no valid");
+        return NO;
+    }
+    
+    if (self.blockList[handledPhoneNumber]) { // 已经设置过这个phoneNumber
+        NSLog(@"pn already exits");
+        return NO;
+    }
+    
+    [self.blockList setObject:label forKey:handledPhoneNumber];
+    return YES;
+}
+
 - (BOOL)reload:(void (^)(NSError *error))completion {
-    if (self.dataList.count == 0) {
-        NSLog(@"datalist 为空, 先添加");
+    if (self.dataList.count == 0 && self.blockList.count == 0) {
+        NSLog(@"list 为空, 先添加");
         return NO;
     }
     NSLog(@"datalist=%@", self.dataList);
+    NSLog(@"blocklist=%@", self.blockList);
     if (![self writeDataToAppGroupFile]) {
         return NO;
     }
     
     CXCallDirectoryManager *manager = [CXCallDirectoryManager sharedInstance];
+    //会异步调用扩展CallDirectoryHandler.m 中的 beginRequestWithExtensionContext 方法，并返回错误
     [manager reloadExtensionWithIdentifier:self.externsionIdentifier completionHandler:^(NSError * _Nullable error) {
         completion(error);
         NSLog(@"reloadExtensionWithIdentifier %@", error);
@@ -84,6 +113,7 @@
 
 - (void)clearPhoneNumber {
     [self.dataList removeAllObjects];
+    [self.blockList removeAllObjects];
 }
 
 /**
@@ -106,17 +136,30 @@
  对dataList中的记录进行升序排序，然后转换为string
  */
 - (NSString *)dataToString {
-    NSMutableArray *phoneArray = [NSMutableArray arrayWithArray:[self.dataList allKeys]];
-    [phoneArray sortUsingSelector:@selector(compare:)];
     NSMutableString *dataStr = [[NSMutableString alloc] init];
-    
-    for (NSString *phone in phoneArray) {
-        NSString *label = self.dataList[phone];
-        NSString *dicStr = [NSString stringWithFormat:@"{\"%@\":\"%@\"}\n", phone, label];
-        [dataStr appendString:dicStr];
+    {
+        NSMutableArray *phoneArray = [NSMutableArray arrayWithArray:[self.dataList allKeys]];
+        [phoneArray sortUsingSelector:@selector(compare:)];
+        
+        for (NSString *phone in phoneArray) {
+            NSString *label = self.dataList[phone];
+            NSString *dicStr = [NSString stringWithFormat:@"{\"pn\":\"%@\",\"name\":\"%@\"}\n", phone, label];
+            [dataStr appendString:dicStr];
+        }
     }
     
-    return [dataStr copy];
+    {
+        NSMutableArray *phoneArray = [NSMutableArray arrayWithArray:[self.blockList allKeys]];
+        [phoneArray sortUsingSelector:@selector(compare:)];
+        
+        for (NSString *phone in phoneArray) {
+            NSString *label = self.blockList[phone];
+            NSString *dicStr = [NSString stringWithFormat:@"{\"pn\":\"%@\",\"name\":\"%@\",\"b\":\"1\"}\n", phone, label];
+            [dataStr appendString:dicStr];
+        }
+    }
+    NSLog(@"%@", dataStr);
+    return dataStr;
 }
 
 /**
@@ -145,15 +188,20 @@
     
     return result;
 }
-
-#pragma mark -
-#pragma mark -Getter
+ 
 
 - (NSMutableDictionary *)dataList {
     if (!_dataList) {
         _dataList = [NSMutableDictionary dictionary];
     }
     return _dataList;
+}
+
+- (NSMutableDictionary *)blockList {
+    if (!_blockList) {
+        _blockList = [NSMutableDictionary dictionary];
+    }
+    return _blockList;
 }
 
 - (NSPredicate *)phoneNumberWithNationCodePredicate {
